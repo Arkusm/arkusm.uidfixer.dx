@@ -2,7 +2,10 @@ import re
 import urllib
 from urlparse import urlparse
 
-from Products.ATContentTypes.content import base
+from plone.dexterity.content import DexterityContent
+from plone.app.textfield.value import RichTextValue
+from plone.behavior.interfaces import IBehaviorAssignable
+from plone.dexterity.interfaces import IDexterityFTI
 
 from plone.portlets.interfaces import (
     IPortletManager, IPortletAssignmentMapping, IPortletRetriever,
@@ -14,6 +17,7 @@ from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
 from plone.app.redirector.interfaces import IRedirectionStorage
 
+
 # XXX meh, no clue what lib has this anymore... replace once remembered!
 def entitize(s):
     s = s.replace('&', '&amp;')
@@ -21,6 +25,26 @@ def entitize(s):
     s = s.replace('<', '&lt;')
     s = s.replace('>', '&gt;')
     return s
+
+
+def get_all_dexterity_and_behavior_fieldnames(entry):
+    if hasattr(entry, 'getObject'):
+        obj = entry.getObject()
+    else:
+        obj = entry
+    # dexterity schema
+    schema = getUtility(
+        IDexterityFTI, name=obj.portal_type).lookupSchema()
+    fields = [schema[name] for name in schema]
+    # behaviors
+    assignable = IBehaviorAssignable(obj)
+    for behavior in assignable.enumerateBehaviors():
+        behavior_schema = behavior.interface
+        for name in behavior_schema:
+            fields.append(behavior_schema[name])
+    # field names
+    fieldnames = [entry.__name__ for entry in fields]
+    return fieldnames
 
 
 class UIDFixerView(BrowserView):
@@ -49,7 +73,7 @@ class UIDFixerView(BrowserView):
         if not context.getId().startswith('portal_'):
             if processed_portlets is None:
                 processed_portlets = []
-            if isinstance(context, base.ATCTContent):
+            if isinstance(context, DexterityContent):
                 for info in self.process_content(context):
                     yield info
             if self.request.get('fix_portlets'):
@@ -83,41 +107,44 @@ class UIDFixerView(BrowserView):
                         for href, uid, rest in self.find_uids(html, context):
                             if uid:
                                 html = html.replace(
-                                    'href="%s%s"' % (href,rest),
-                                    'href="resolveuid/%s%s"' % (uid,rest))
+                                    'href="%s%s"' % (href, rest),
+                                    'href="resolveuid/%s%s"' % (uid, rest))
                                 html = html.replace(
                                     'src="%s%s"' % (href, rest),
-                                    'src="resolveuid/%s%s"' % (uid,rest))
+                                    'src="resolveuid/%s%s"' % (uid, rest))
                                 fixed = True
-                            yield (context, portlet,href, uid)
+                            yield (context, portlet, href, uid)
                         if fixed and not self.request.get('dry'):
                             assignment.text = html
                             assignment._p_changed = True
 
     def process_content(self, context):
-        fields = context.schema.fields()
-        for field in fields:
-            if (field.type != 'text' or
-                    field.default_output_type != 'text/x-html-safe'):
-                continue
-            fieldname = field.getName()
-            html = field.getRaw(context)
-            fixed = False
-            for href, uid, rest in self.find_uids(html, context):
-                if not uid:
-                    # html = html.replace(href, 'UNRESOLVED:/%s' % (uid,))
+        fieldnames = get_all_dexterity_and_behavior_fieldnames(
+                                                                    context)
+        for fieldname in fieldnames:
+            if hasattr(context, fieldname):
+                field = getattr(context, fieldname)
+                if not isinstance(field, RichTextValue):
                     continue
-                else:
-                    html = html.replace(
-                        'href="%s%s"' % (href, rest),
-                        'href="resolveuid/%s%s"' % (uid, rest))
-                    html = html.replace(
-                        'src="%s%s"' % (href, rest),
-                        'src="resolveuid/%s%s"' % (uid,rest))
-                fixed = True
-                yield (context, fieldname, href, uid)
-            if fixed and not self.request.get('dry'):
-                field.set(context, html)
+                html = field.raw
+
+                fixed = False
+                for href, uid, rest in self.find_uids(html, context):
+                    if not uid:
+                        # html = html.replace(href, 'UNRESOLVED:/%s' % (uid,))
+                        continue
+                    else:
+                        html = html.replace(
+                            'href="%s%s"' % (href, rest),
+                            'href="resolveuid/%s%s"' % (uid, rest))
+                        html = html.replace(
+                            'src="%s%s"' % (href, rest),
+                            'src="resolveuid/%s%s"' % (uid, rest))
+                    fixed = True
+                    yield (context, fieldname, href, uid)
+                if fixed and not self.request.get('dry'):
+                    setattr(context, 'text', RichTextValue(
+                            html, 'text/html', 'text/x-html-safe'))
 
     def convert_link(self, href, context):
         if '/resolveuid/' in href and self.request.get('fix_resolveuid'):
@@ -139,15 +166,14 @@ class UIDFixerView(BrowserView):
                 except AttributeError:
                     pass
 
-
     def resolve_redirector(self, href, context):
         redirector = getUtility(IRedirectionStorage)
 
-        skip_links = self.request.get('skip_links','').splitlines()
+        skip_links = self.request.get('skip_links', '').splitlines()
 
         if skip_links and any([link in href for link in skip_links if link]):
             raise KeyError
-                
+
         if href.endswith('/'):
             href = href[:-1]
         chunks = [urllib.unquote(chunk) for chunk in href.split('/')]
@@ -180,7 +206,7 @@ class UIDFixerView(BrowserView):
 
     _reg_href = re.compile(r'href="([^"]+)"')
     _reg_src = re.compile(r'src="([^"]+)"')
-    
+
     def find_uids(self, html, context):
         while True:
             match = self._reg_href.search(html)
@@ -198,11 +224,12 @@ class UIDFixerView(BrowserView):
             html = html.replace(match.group(0), '')
             scheme, netloc, path, params, query, fragment = urlparse(href)
             # import pdb; pdb.set_trace()
-            if (href and not scheme and not netloc and not href.lower().startswith('resolveuid/')):
+            if (href and not scheme and not netloc and
+                    not href.lower().startswith('resolveuid/')):
                 # relative link, convert to resolveuid one
                 uid = self.convert_link(href, context)
                 yield href, uid, rest
-        #Rince and repeat for images
+        # Rince and repeat for images
         while True:
             match = self._reg_src.search(html)
             if not match:
@@ -212,15 +239,14 @@ class UIDFixerView(BrowserView):
             # not entirely correct, but this seems
             # relatively solid
             rest = ''
-            for s in ('@@', '?', '#', '++','/image_'):
+            for s in ('@@', '?', '#', '++', '/image_'):
                 if s in src:
                     rest += src[src.find(s):]
                     src = src[:src.find(s)]
             html = html.replace(match.group(0), '')
             scheme, netloc, path, params, query, fragment = urlparse(src)
-            if (src and not scheme and not netloc and not src.lower().startswith('resolveuid/')):
+            if (src and not scheme and not netloc and
+                    not src.lower().startswith('resolveuid/')):
                 # relative link, convert to resolveuid one
                 uid = self.convert_link(src, context)
                 yield src, uid, rest
-       
-          
