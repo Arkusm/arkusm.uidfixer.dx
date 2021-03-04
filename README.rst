@@ -79,6 +79,4 @@ Support
 https://github.com/Arkusm/arkusm.uidfixer.dx/issues
 
 
-Links
------
 .. _pareto.uidfixer: https://github.com/pareto/pareto.uidfixer
