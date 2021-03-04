@@ -19,7 +19,7 @@ Features
 Documentation
 -------------
 
-Full documentation for end users can be found in the "docs" folder, and is also available online at https://github.com/Arkusm/arkusm.uidfixer.dx/tree/master/docs
+Full documentation for end users can be found in the "docs" folder.
 
 
 Installation
