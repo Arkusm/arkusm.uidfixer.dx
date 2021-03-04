@@ -4,7 +4,7 @@
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       lang="en"
       metal:use-macro="context/main_template/macros/master"
-      i18n:domain="knmp.im">
+      i18n:domain="arkusm.uidfixer.dx">
   <head>
     <metal:css fill-slot="css_slot">
       <style type="text/css">

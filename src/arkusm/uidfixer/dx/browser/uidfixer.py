@@ -4,8 +4,7 @@ from urlparse import urlparse
 
 from plone.dexterity.content import DexterityContent
 from plone.app.textfield.value import RichTextValue
-from plone.behavior.interfaces import IBehaviorAssignable
-from plone.dexterity.interfaces import IDexterityFTI
+from .. import tools
 
 from plone.portlets.interfaces import (
     IPortletManager, IPortletAssignmentMapping, IPortletRetriever,
@@ -27,24 +26,27 @@ def entitize(s):
     return s
 
 
-def get_all_dexterity_and_behavior_fieldnames(entry):
-    if hasattr(entry, 'getObject'):
-        obj = entry.getObject()
-    else:
-        obj = entry
-    # dexterity schema
-    schema = getUtility(
-        IDexterityFTI, name=obj.portal_type).lookupSchema()
-    fields = [schema[name] for name in schema]
-    # behaviors
-    assignable = IBehaviorAssignable(obj)
-    for behavior in assignable.enumerateBehaviors():
-        behavior_schema = behavior.interface
-        for name in behavior_schema:
-            fields.append(behavior_schema[name])
-    # field names
-    fieldnames = [entry.__name__ for entry in fields]
-    return fieldnames
+def get_pre_path(context):
+    pre_path = ''
+    relative_url = tools.get_relative_url(context)
+    level = relative_url.count('/')
+    for entry in range(level):
+        pre_path = '{}{}'.format(pre_path, '../')
+    return pre_path
+
+
+def pre_url_fix_et(href, context):
+    pre_path = get_pre_path(context)
+    # Repairs links that contain your own domain
+    if href.startswith('http://WWW.MY-DOMAIN.ORG/'):
+        href = href.replace('http://WWW.MY-DOMAIN.ORG/', '/')
+    # replace '/' with path relative to root
+    if href.startswith('/'):
+        href = href.replace('/', pre_path, 1)
+    # Add Your own transformations here
+    # ...
+    # return fixed
+    return href
 
 
 class UIDFixerView(BrowserView):
@@ -119,7 +121,7 @@ class UIDFixerView(BrowserView):
                             assignment._p_changed = True
 
     def process_content(self, context):
-        fieldnames = get_all_dexterity_and_behavior_fieldnames(
+        fieldnames = tools.get_all_dexterity_and_behavior_fieldnames(
                                                                     context)
         for fieldname in fieldnames:
             if hasattr(context, fieldname):
@@ -188,8 +190,14 @@ class UIDFixerView(BrowserView):
             else:
                 break
         path = list(context.getPhysicalPath()) + chunks
-        redirect = redirector.get('/'.join(path))
+        print path
+        print context.absolute_url()
+        redirector_path = u''
+        for entry in path:
+                redirector_path += u'/{}'.format(tools.decode_utf8(entry))
+        redirect = redirector.get(redirector_path)
         if redirect is not None:
+            # print path
             redirected = context.restrictedTraverse(
                 redirect.split('/'))
             if redirected is not None:
@@ -222,12 +230,13 @@ class UIDFixerView(BrowserView):
                     rest += href[href.find(s):]
                     href = href[:href.find(s)]
             html = html.replace(match.group(0), '')
-            scheme, netloc, path, params, query, fragment = urlparse(href)
+            href_et_fix = pre_url_fix_et(href, context)  # pre fix URLs
+            scheme, netloc, path, params, query, fragment = urlparse(href_et_fix)
             # import pdb; pdb.set_trace()
-            if (href and not scheme and not netloc and
-                    not href.lower().startswith('resolveuid/')):
+            if (href_et_fix and not scheme and not netloc and not
+                    href.lower().startswith('resolveuid/')):
                 # relative link, convert to resolveuid one
-                uid = self.convert_link(href, context)
+                uid = self.convert_link(href_et_fix, context)
                 yield href, uid, rest
         # Rince and repeat for images
         while True:
@@ -245,8 +254,8 @@ class UIDFixerView(BrowserView):
                     src = src[:src.find(s)]
             html = html.replace(match.group(0), '')
             scheme, netloc, path, params, query, fragment = urlparse(src)
-            if (src and not scheme and not netloc and
-                    not src.lower().startswith('resolveuid/')):
+            if (src and not scheme and not netloc and not
+                    src.lower().startswith('resolveuid/')):
                 # relative link, convert to resolveuid one
                 uid = self.convert_link(src, context)
                 yield src, uid, rest

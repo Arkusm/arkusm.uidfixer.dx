@@ -1,0 +1,101 @@
+Metadata-Version: 1.1
+Name: arkusm.uidfixer.dx
+Version: 0.5.dev0
+Summary: Find relative links in a dexterity based Plone site and replace them with 'resolveuid' ones.
+Home-page: https://github.com/Arkusm/arkusm.uidfixer.dx
+Author: Markus Schmidt
+Author-email: m.schmidt@iwm-tuebingen.de
+License: GPL version 2
+Description: .. This README is meant for consumption by humans and pypi. Pypi can render rst files so please do not use Sphinx features.
+           If you want to learn more about writing documentation, please check out: http://docs.plone.org/about/documentation_styleguide.html
+           This text does not appear on pypi or github. It is a comment.
+        
+        ==============================================================================
+        arkusm.uidfixer.dx
+        ==============================================================================
+        
+        Tell me what your product does
+        
+        Features
+        --------
+        
+        - Can be bullet points
+        
+        
+        Examples
+        --------
+        
+        This add-on can be seen in action at the following sites:
+        - Is there a page on the internet where everybody can see the features?
+        
+        
+        Documentation
+        -------------
+        
+        Full documentation for end users can be found in the "docs" folder, and is also available online at http://docs.plone.org/foo/bar
+        
+        
+        Translations
+        ------------
+        
+        This product has been translated into
+        
+        - Klingon (thanks, K'Plai)
+        
+        
+        Installation
+        ------------
+        
+        Install arkusm.uidfixer.dx by adding it to your buildout::
+        
+            [buildout]
+        
+            ...
+        
+            eggs =
+                arkusm.uidfixer.dx
+        
+        
+        and then running ``bin/buildout``
+        
+        
+        Contribute
+        ----------
+        
+        - Issue Tracker: https://github.com/Arkusm/arkusm.uidfixer.dx/issues
+        - Source Code: https://github.com/Arkusm/arkusm.uidfixer.dx
+        - Documentation: https://github.com/Arkusm/arkusm.uidfixer.dx/tree/master/docs
+        
+        
+        Support
+        -------
+        
+        If you are having issues, please let us know.
+        We have a mailing list located at: project@example.com
+        
+        
+        
+        Contributors
+        ============
+        
+        - Markus Schmidt, m.schmidt@iwm-tuebingen.de
+        
+        
+        Changelog
+        =========
+        
+        
+        1.0a1 (unreleased)
+        ------------------
+        
+        - Initial release.
+          [arkusm]
+        
+Keywords: Python Plone uidfixer dexterity html tool admin
+Platform: UNKNOWN
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Plone
+Classifier: Framework :: Plone :: 4.3
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Operating System :: OS Independent
