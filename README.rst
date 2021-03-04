@@ -19,7 +19,7 @@ Features
 --------
 
 - Find relative links in a dexterity based Plone site and replace them with 'resolveuid' ones.
-- Also repairs absolute paths starting with ``http://WWW.MY-DOMAIN.ORG`` or paths starting with '/' (more information in the file uidfixer.py).
+- Also repairs absolute paths starting with ``http://WWW.MY-DOMAIN.ORG`` or paths starting with ``/`` (more information in browser/uidfixer.py).
 
 
 Documentation
