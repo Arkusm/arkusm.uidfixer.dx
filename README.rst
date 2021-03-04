@@ -8,11 +8,17 @@ arkusm.uidfixer.dx
 
 This product is based on pareto.uidfixer_. It has been adapted to work with dexterity content types. Use it to find relative links in a Plone site and replace them with 'resolveuid' ones. This product finds all links that point to items within the site, or links that contain 'resolveuid' as part of the URL, then uses traversal and the redirection tool (portal_redirection) to get to the object linked to. If that fails, the link is kept in-tact and is reported, if an object is found, the link is converted to a proper 'resolveuid' one and saved.
 
+Prerequisites
+-------------
+
+- Plone 4 (you can use minimalplone4mrbob_ for testing)
+- dexterity based content-types (plone.app.contenttypes)
+
+
 Features
 --------
 
-- Find relative links in a Plone site and replace them with 'resolveuid' ones.
-- Can only be used with dexterity based plone sites
+- Find relative links in a dexterity based Plone site and replace them with 'resolveuid' ones.
 - Also repairs absolute paths starting with ``http://WWW.MY-DOMAIN.ORG`` or paths starting with '/' (more information in the file uidfixer.py).
 
 
@@ -80,3 +86,4 @@ https://github.com/Arkusm/arkusm.uidfixer.dx/issues
 
 
 .. _pareto.uidfixer: https://github.com/pareto/pareto.uidfixer
+.. _minimalplone4mrbob: https://github.com/Arkusm/minimalplone4mrbob
